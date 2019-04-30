@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Some random sounds.</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="">
+    </head>
+    <body>
+        <script src="./ChordLibrary.js" async defer></script> 
+        <script src="./Ranges.js" async defer></script>
+        <script src="./Restrictions.js" async defer></script>
+        <script src="./tones.js" async defer></script>
+
+        <h1>This shit will play some randomly generated chords based on the restrictions you set.</h1>
+        <h2>Try it!</h2>
+        <div id="CM7"> <strong>Click here</strong> to play a C Major 7 chord!</div>
+        <hr>
+        <h2>For random three-voice chords with proper voice leading, set some parameters here...</h2>
+        
+        <section class="chordtypes">
+          <span>Select available chord types:</span>
+          <br>
+          <input type="checkbox" name="chordtype" id="majtriad" value="majtriad" checked>
+          <label for="majtriad">0 4 7 (Major triad)</label>
+          <input type="checkbox" name="chordtype" id="mintriad" value="mintriad" checked >
+          <label for="mintriad">0 3 7 (Minor triad)</label>
+          <input type="checkbox" name="chordtype" id="dimtriad" value="dimtriad" checked>
+          <label for="dimtriad">0 3 6 (Diminished triad)</label>
+          <input type="checkbox" name="chordtype" id="augtriad" value="augtriad">
+          <label for="augtriad">0 4 8 (Augmented triad)</label>
+        </section>
+        <br>
+
+        <section class="instrument">
+            <span>Select a waveform:</span>
+            <br>
+            <input type="radio" name="wave" id="sine" value="sine" checked>
+            <label for="sine">Sine</label>
+            <input type="radio" name="wave" id="square" value="square">
+            <label for="square">Square</label>
+            <input type="radio" name="wave" id="triangle" value="triangle">
+            <label for="triangle">Triangle</label>
+            <input type="radio" name="wave" id="sawtooth" value="sawtooth">
+            <label for="sawtooth">Sawtooth</label>
+          </section>
+          <br>
+
+        <section class="playspeed">
+            <label for="speed">Select speed of chord arpeggiation:</label>
+            <br>
+            <select name="speed" id="speed">
+              <option value="0">Instant</option>
+              <option value="20">Very fast</option>
+              <option selected="selected" value="40">Fast</option>
+              <option value="150">Medium</option>
+              <option value="700">Old man</option>
+            </select>
+        </section>
+        <br>
+
+        <section class="maxdistance">
+            <label for="distance">Select maximum distance each voice can move:</label>
+            <br>
+            <span>1</span>
+            <input type="range" name="distance" id="distance" value="3" min="1" max="6">
+            <span>6</span>
+        </section>
+        <hr>
+        <section class="instructions">
+            <div id="play"> Press arrow keys to generate and navigate chords.</div>
+            <div id="chordinfo"> Tune is empty.</div>
+            <div id="resettune"> <strong>Click here</strong> to reset the tune!</div>
+        </section>
+    </body>
+</html>

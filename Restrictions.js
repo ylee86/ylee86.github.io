@@ -1,27 +1,13 @@
 
 // global variables
 let voiceCount = 3;
-let maxDistance = 3;
+let maxDistance = 1;
 let voices = [TENOR, ALTO, SOPRANO];
 let motionLibrary = [];
 let library = new ChordLibrary;
 let tune = [];
 let currentPosition = -1;
 let arpSpeed = 20;
-const CONSTANTS = {
-    KEY_LEFT: 37,
-    KEY_UP: 38,
-    KEY_RIGHT: 39,
-    KEY_DOWN: 40
-}
-
-
-// add a chordType(array) to chordLibrary
-// (this function will eventually be able to parse note letters, common chord type names, etc)
-function addChordType(chordType) {
-    library.push(chordType);
-}
-
 
 // select a random chordType from chordLibrary and generate a chordInstance with a random bass note
 function firstChord() {
@@ -39,12 +25,15 @@ function firstChord() {
         } else if (aboveVoiceRange(voices[i], val)) {
             val -= scaleSize;
         }
-
         chord.push(val);
     }
             //console.log("First chord: ")
             //console.log(chord);
     return chord;  
+}
+
+function firstChord1() {
+    return [51,61,73];
 }
 
 // given a chord, returns a valid next chord (compliant with ChordLibrary and voice leading)
@@ -59,50 +48,17 @@ function nextChord(chord) {
         }
         allDestinations.push(oneDestination);
     }
-    
-    // sortAndReduce all destinations
-    const reducedDestinations = [];
-    for (let i=0; i<quantity; i++) {
-        reducedDestinations.push(sortAndReduce(allDestinations[i]));
-    }
-    
-            //console.log(motionLibrary);
-            //console.log("All destinations:");
-            //console.log(allDestinations);
-            //console.log("Reduced destinations:");
-            //console.log(reducedDestinations);
-    
 
-    // compare sortAndReduced chords with chordLibrary; save indexes of valid destinations
-    const validIndex = [];
-    for (let i=0; i<quantity; i++) {
-        const temporaryChord = reducedDestinations[i];
-        if (library.contains(temporaryChord)) {
-            validIndex.push(i);
-        }
-        
-    }
-            //console.log(validIndex);
+        //  console.log('all destinations:');
+        //  console.log(allDestinations);
 
-    // calculate all validDestinations
-    let validDestinations = [];
-    for (let i=0; i<validIndex.length; i++){
-        const index = validIndex[i];
-        validDestinations.push(allDestinations[index]);
-    }
-
-        //console.log("Valid destinations: ");
-        //console.log(validDestinations);
-
-    // remove destinations that result in parallel octaves of fifths
-    const temporaryArray = [];
-    for (let i=0; i<validDestinations.length; i++) {
-        if (!parallel58(chord, validDestinations[i])) {
-            temporaryArray.push(validDestinations[i]);
-            //console.log('checking for 58')
-        }
-    }
-    validDestinations = temporaryArray;
+    // remove invalid destinations!
+    let validDestinations = removeInvalidChordTypes(allDestinations);
+    validDestinations = removeNonDiatonicChords(validDestinations);
+    validDestinations = removeParallels(chord, validDestinations);
+    validDestinations = removeOutOfRangeChords(validDestinations);
+          console.log('remaining chords are valid:')
+          console.log(validDestinations);
 
     //sort and reduce validDestinations
     const reducedValidDestinations = [];
@@ -110,13 +66,6 @@ function nextChord(chord) {
         reducedValidDestinations.push(sortAndReduce(validDestinations[i]));
     }
 
-
-        //console.log("Valid destinations: ");
-        //console.log(validDestinations);
-    
-        //console.log("Reductions of valid destinations: ");
-        //console.log(reducedValidDestinations);
-    
     // return a random validChord
     const randomIndex = Math.floor(Math.random()*validDestinations.length);
     const nextChord = validDestinations[randomIndex];
@@ -133,23 +82,90 @@ function sortAndReduce(chord) {
     })
     const reducedChord = [];
     for (let i=0; i<chord.length; i++){
-        reducedChord.push((sortedChord[i]-sortedChord[0])%scaleSize);
+        reducedChord.push((sortedChord[i]-sortedChord[0])%CONSTANTS.PERFECT_OCTAVE);
     }
     return reducedChord;
 }
 
-// returns true if movement between two chords results in parallel Octaves or parallel Fifths
+// takes an array of chords; removes chords that are not within chordLibrary
+function removeInvalidChordTypes(originalChords) {
+
+    // return indexes of valid chords
+    const validIndex = [];
+    let validChords = [];
+    const invalidChords = [];
+    for (let i=0; i<originalChords.length; i++) {
+        const chord = sortAndReduce(originalChords[i]);
+        if (library.contains(chord)) {
+            validIndex.push(i);
+                //console.log('valid chord type: ');
+                //console.log(chord);
+        } else {
+            invalidChords.push(originalChords[i]);
+                //console.log('invalid chord type: ');
+                //console.log(chord);
+        }
+    }
+    // create an return new array of valid chords
+    
+    for (let i=0; i<validIndex.length; i++){
+        const index = validIndex[i];
+        validChords.push(originalChords[index]);
+    }
+          console.log('removed invalid chord types:')
+          console.log(invalidChords);
+    return validChords;
+}
+
+// takes an array of chords; removes non-diatonic chords
+function removeNonDiatonicChords(originalChords) {
+    const validChords = [];
+    const invalidChords = [];
+    for (let i=0; i<originalChords.length; i++) {    // for each chord
+        let allNotesDiatonic = true;
+        for (let j=0; j <voiceCount; j++) {    // for each voice
+            const note = originalChords[i][j];
+            if (!scaleLookup.includes(note)) {
+                allNotesDiatonic = false;
+                invalidChords.push(originalChords[i]);
+                break;
+            }
+        }
+        if (allNotesDiatonic) {
+            validChords.push(originalChords[i]);
+        }
+    }
+          console.log('removed nondiatonic chords:')
+          console.log(invalidChords);
+    return validChords;
+}
+
+// takes a chord and an array of destinations; removes destinations that would result in //P8 or //P5
+function removeParallels(chord, originalChords) {
+    const validChords = [];
+    const invalidChords = [];
+    for (let i=0; i<originalChords.length; i++) {   // for each chord
+        if (!parallel58(chord, originalChords[i])) {
+            validChords.push(originalChords[i]);
+        } else {
+            invalidChords.push(originalChords[i]);
+        }
+    }
+        //  console.log('removed chords resulting in parallel motion:')
+        //  console.log(invalidChords);
+    return validChords;
+}
+
+// returns true if movement between two chords results in //P8 or //P5 //PU
 function parallel58(chord1, chord2) {
     const size = chord1.length;
     for (let i=0; i<size; i++) {
         for (let j=i+1; j<size; j++) {
-            const interval1 = (chord1[j]-chord1[i])%scaleSize;
-            const interval2 = (chord2[j]-chord2[i])%scaleSize;
-            //console.log(`Interval 1: ${interval1}, Interval 2: ${interval2}, `)
-            if (((interval1===OCTAVE && interval2===OCTAVE) || // parallel octaves OR
-        (interval1===PFIFTH && interval2===PFIFTH)) // parallel fifths
+            const interval1 = (chord1[j]-chord1[i])%CONSTANTS.PERFECT_OCTAVE;
+            const interval2 = (chord2[j]-chord2[i])%CONSTANTS.PERFECT_OCTAVE;
+            if (((interval1===CONSTANTS.PERFECT_UNISON && interval2===CONSTANTS.PERFECT_UNISON) || // parallel octaves/unison OR
+        (interval1===CONSTANTS.PERFECT_FIFTH && interval2===CONSTANTS.PERFECT_FIFTH)) // parallel fifths
          && chord1[i]!==chord2[i]) { // and movement has occurred
-            //console.log(`Parallel motion for chord ${chord2}`);
             return true;
             }
         }
@@ -157,17 +173,27 @@ function parallel58(chord1, chord2) {
     return false;
 }
 
-// initialization functions
-function setVoiceCount(number) {
-    voiceCount = number;
-}
-
-function setMaxDistance(number) {
-    maxDistance = number;
-}
-
-function setVoiceRange(voice, minVal, maxVal) {
-    voices[voice] = {min: minVal, max: maxVal};
+// takes an array of chords; removes destinations that are out of voice range
+function removeOutOfRangeChords(originalChords) {
+    const validChords = [];
+    const invalidChords = [];
+    for (let i=0; i<originalChords.length; i++) {    // for each chord
+        let allVoicesInRange = true;
+        for (let j=0; j <voiceCount; j++) {    // for each voice
+            const note = originalChords[i][j];
+            if (!inVoiceRange(voices[j], note)) {
+                allVoicesInRange = false;
+                invalidChords.push(originalChords[i]);
+                break;
+            }
+        }
+        if (allVoicesInRange) {
+            validChords.push(originalChords[i]);
+        }
+    }
+          console.log('removed out of range chords:')
+          console.log(invalidChords);
+    return validChords;
 }
 
 // calculate all possible permutations to move a maximum of distance
@@ -187,22 +213,16 @@ function generateMotionLibrary() {
     motionLibrary = everyMove;
 }
 
-
-
-
-
 function playCM7() {
     const chord = [48,52,67,71];
     arpeggiate(chord,0,200);
 }
 
 function play(event) {
-    console.log(event);
 // arrow keys
     switch (event.keyCode) {
         case CONSTANTS.KEY_LEFT: // go back one chord 
             if (currentPosition < 0) {
-                console.log('at beginning');
             } else {
                 currentPosition--;
             }
@@ -217,13 +237,11 @@ function play(event) {
             else if (currentPosition === tune.length-1) {   // if at end of tune, create next chord
                 tune.push(nextChord(tune[currentPosition]));
             }
-        //console.log(tune);
             currentPosition++;
             break;
 
         case CONSTANTS.KEY_UP:  // go to beginning of tune
             if (tune.length === 0) {
-                console.log('no chords')
             } else {
                 currentPosition = 0;
             }
@@ -238,46 +256,45 @@ function play(event) {
     
     // play the chord    
     if (currentPosition < 0) {
-        console.log('nothing to play');
         return;
     } else {
-        //console.log(`currentPosition: ${currentPosition}`);
         updateChordInfo();
         console.log(tune);
-        /*for (let i=0; i<voiceCount; i++) {
-            //tones.play(midiToFrequency(tune[currentPosition][i]));
-        }*/
         arpeggiate(tune[currentPosition], 0, arpSpeed);
     }
 }
 
+// plays the chord arpeggiated
 function arpeggiate(chord, index, ms) {
     if (!index || index < chord.length) {
         setTimeout(function(){
-          index = index ? index : 0;
-          tones.play(midiToFrequency(chord[index]));
-          index++;
-          arpeggiate(chord, index, ms);
+            index = index ? index : 0;
+            const midiVal = chord[index];
+            tones.play(CONSTANTS.MIDI_FREQUENCIES[midiVal]);
+            index++;
+            arpeggiate(chord, index, ms);
         }, ms)
     }
 }
 
-// communication with html file
-const firstDiv = document.getElementById('CM7');
-const saveDiv = document.getElementById('resettune');
-const infoDiv = document.getElementById('chordinfo');
-firstDiv.addEventListener('click', playCM7);
-saveDiv.addEventListener('click', resetTune);
-infoDiv.addEventListener('click', updateChordInfo);
-document.addEventListener('keydown', play);
+// initialization functions
+function setVoiceCount(number) {
+    voiceCount = number;
+}
 
+function setMaxDistance(number) {
+    maxDistance = number;
+}
+
+function setVoiceRange(voice, minVal, maxVal) {
+    voices[voice] = {min: minVal, max: maxVal};
+}
 function setParameters(){
     selectChords();
     selectInstrument();
     selectSpeed();
     selectDistance();
     generateMotionLibrary();
-    console.log(library);
 }
 
 function resetTune() {
@@ -287,7 +304,11 @@ function resetTune() {
 }
 
 function updateChordInfo() {
-    infoDiv.innerHTML = `Current tune position: ${currentPosition}. Current chord: ${tune[currentPosition]}.`
+    chordNotes = [];
+    for (let i = 0; i<voiceCount; i++) {
+        chordNotes.push(CONSTANTS.MIDI_PITCHES[tune[currentPosition][i]]);
+    }
+    infoDiv.innerHTML = `Current tune position: ${currentPosition}. Current chord: ${chordNotes}.`;
 
 }
 
@@ -330,38 +351,14 @@ function selectSpeed() {
 
 function selectDistance() {
     const distance = document.getElementById('distance').value;
-    maxDistance = parseInt(distance);
-    
+    maxDistance = parseInt(distance);  
 }
 
-/*old shit
-// tests
-const library = new ChordLibrary();
-library.addChord([0,4,7]);
-library.addChord([0,3,7]);
-library.addChord([0,3,6]);
-library.addChord([0,4,10]);
-library.addChord([0,3,10]);
-//library.addChord([0,3,6]);
-library.addInversions();
-console.log(library);
-generateMotionLibrary();
-//console.log(motionLibrary);
-
-const chord1 = firstChord();
-//const chord2 = nextChord(chord1);
-console.log("First chord: ")
-console.log(chord1);
-//console.log(chord2);
-
-
-function testFun() {
-    const chord1 = firstChord();
-    const chord2 = nextChord(chord1);
-    const c1 = [20, 23, 27];
-    const c2 = [21, 24, 28];
-    console.log(parallel58(c1, c2));
-}
-
-
-*/
+// communication with html file
+const firstDiv = document.getElementById('CM7');
+const saveDiv = document.getElementById('resettune');
+const infoDiv = document.getElementById('chordinfo');
+firstDiv.addEventListener('click', playCM7);
+saveDiv.addEventListener('click', resetTune);
+infoDiv.addEventListener('click', updateChordInfo);
+document.addEventListener('keydown', play);

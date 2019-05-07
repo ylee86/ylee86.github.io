@@ -12,6 +12,8 @@
         <script src="./Ranges.js" async defer></script>
         <script src="./Restrictions.js" async defer></script>
         <script src="./tones.js" async defer></script>
+        <script src="./Constants.js" async defer></script>
+        <script src="./Scale.js" async defer></script>
 
         <h1>This shit will play some randomly generated chords based on the restrictions you set.</h1>
         <h2>Try it!</h2>
@@ -64,7 +66,7 @@
             <label for="distance">Select maximum distance each voice can move:</label>
             <br>
             <span>1</span>
-            <input type="range" name="distance" id="distance" value="3" min="1" max="6">
+            <input type="range" name="distance" id="distance" value="2" min="1" max="6">
             <span>6</span>
         </section>
         <hr>
@@ -72,6 +74,7 @@
             <div id="play"> Press arrow keys to generate and navigate chords.</div>
             <div id="chordinfo"> Tune is empty.</div>
             <div id="resettune"> <strong>Click here</strong> to reset the tune!</div>
+            <div id="temporary"> TEST TEST TEST </div>
         </section>
     </body>
 </html>

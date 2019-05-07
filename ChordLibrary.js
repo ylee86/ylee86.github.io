@@ -8,7 +8,7 @@ class ChordLibrary {
         return this._chords;
     }
 
-    get library() {
+    get lookup() {
         return this._lookup;
     }
 
@@ -24,12 +24,11 @@ class ChordLibrary {
             for (let degree=0; degree<chord.length; degree++) { // for each inversion
                 const inversion = [];
                 for (let voice=0; voice<chord.length; voice++) { // for each voice
-                    const val = mod(chord[(degree+voice)%chord.length]-chord[degree], scaleSize);
+                    const val = mod(chord[(degree+voice)%chord.length]-chord[degree], CONSTANTS.PERFECT_OCTAVE);
                     inversion.push(val);
                 }
                 this._lookup.push(inversion);
             }
-            
         }
     }
 
@@ -40,27 +39,27 @@ class ChordLibrary {
     }
 
     contains(chord) { // checks if library contains chord
-                //console.log(`size = ${librarySize}`);
-                //console.log(`chordLength = ${chordLength}`);
         for (let i=0; i<this._lookup.length; i++) { // iterate over each chord in the library
-            if (chord.join('') === this._lookup[i].join('')) {  
-            return true;
+                //console.log(`chord 1:  ${chord}, chord 2: ${this._lookup[i]}`);
+            if (chord.join('') === this._lookup[i].join('')) {
+                return true;
             }
         }
-
+        return false;
     }
 
     removeAll() {
         this._chords = [];
         this._lookup = [];
     }
-
 }
 
 function mod(x,y) { //helper: modulo for negative numbers
     return ((x%y) + y) % y;
 }
-/*
+
+
+/* TESTS
 const chordLibrary = new ChordLibrary();
 chordLibrary.addChord([0,4,7]);
 chordLibrary.addChord([0,3,7]);
